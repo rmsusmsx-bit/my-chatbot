@@ -1,0 +1,153 @@
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font-sans); }
+  #app { display: flex; flex-direction: column; height: 580px; background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); overflow: hidden; }
+  #header { padding: 14px 18px; border-bottom: 0.5px solid var(--color-border-tertiary); display: flex; align-items: center; gap: 10px; background: var(--color-background-primary); }
+  #header .avatar { width: 32px; height: 32px; border-radius: 6px; background: #E24B4A; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+  #header .info .name { font-size: 14px; font-weight: 500; color: var(--color-text-primary); }
+  #header .info .role { font-size: 11px; color: var(--color-text-secondary); }
+  #header .status { margin-left: auto; display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--color-text-secondary); }
+  #header .dot { width: 6px; height: 6px; border-radius: 50%; background: #639922; }
+  #messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; background: var(--color-background-tertiary); }
+  #messages::-webkit-scrollbar { width: 4px; }
+  #messages::-webkit-scrollbar-thumb { background: var(--color-border-secondary); border-radius: 2px; }
+  .msg { display: flex; gap: 8px; max-width: 88%; }
+  .msg.user { align-self: flex-end; flex-direction: row-reverse; }
+  .bubble { padding: 10px 14px; border-radius: 12px; font-size: 13px; line-height: 1.6; color: var(--color-text-primary); }
+  .msg.ai .bubble { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: 4px 12px 12px 12px; }
+  .msg.user .bubble { background: #E24B4A; color: white; border-radius: 12px 4px 12px 12px; }
+  .msg .av { width: 26px; height: 26px; border-radius: 6px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; margin-top: 2px; }
+  .msg.ai .av { background: #E24B4A; color: white; }
+  .msg.user .av { background: var(--color-background-secondary); color: var(--color-text-secondary); font-size: 11px; }
+  .typing { display: flex; gap: 4px; align-items: center; padding: 12px 14px; }
+  .typing span { width: 6px; height: 6px; background: var(--color-border-primary); border-radius: 50%; animation: bounce 1.2s infinite; }
+  .typing span:nth-child(2) { animation-delay: 0.2s; }
+  .typing span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
+  #api-setup { padding: 12px 16px; background: var(--color-background-secondary); border-bottom: 0.5px solid var(--color-border-tertiary); display: flex; gap: 8px; align-items: center; }
+  #api-setup input { flex: 1; font-size: 12px; padding: 7px 10px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); background: var(--color-background-primary); color: var(--color-text-primary); font-family: var(--font-mono); }
+  #api-setup button { font-size: 12px; padding: 7px 14px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); background: var(--color-background-primary); color: var(--color-text-primary); cursor: pointer; white-space: nowrap; }
+  #api-setup button:hover { background: var(--color-background-secondary); }
+  #api-notice { font-size: 11px; color: var(--color-text-secondary); }
+  #input-area { padding: 12px 16px; border-top: 0.5px solid var(--color-border-tertiary); display: flex; gap: 8px; align-items: flex-end; background: var(--color-background-primary); }
+  #input-area textarea { flex: 1; font-size: 13px; padding: 9px 12px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); background: var(--color-background-secondary); color: var(--color-text-primary); resize: none; font-family: var(--font-sans); line-height: 1.5; min-height: 38px; max-height: 100px; }
+  #input-area textarea:focus { outline: none; border-color: var(--color-border-primary); }
+  #send-btn { width: 36px; height: 36px; border-radius: var(--border-radius-md); background: #E24B4A; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  #send-btn:hover { opacity: 0.85; }
+  #send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .send-icon { width: 16px; height: 16px; fill: white; }
+  .quick-btns { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+  .quick-btn { font-size: 11px; padding: 4px 10px; border: 0.5px solid var(--color-border-secondary); border-radius: 20px; background: var(--color-background-primary); color: var(--color-text-secondary); cursor: pointer; white-space: nowrap; }
+  .quick-btn:hover { border-color: #E24B4A; color: #E24B4A; }
+  .no-api-msg { font-size: 12px; color: var(--color-text-secondary); padding: 8px 0; text-align: center; }
+</style>
+
+<div id="app">
+  <div id="header">
+    <div class="avatar">▶</div>
+    <div class="info">
+      <div class="name">YouTube 콘텐츠 전문가</div>
+      <div class="role">스크립트 · 썸네일 · SEO · 채널 전략</div>
+    </div>
+    <div class="status"><div class="dot"></div>준비됨</div>
+  </div>
+
+  <div id="api-setup">
+    <input type="password" id="api-key-input" placeholder="sk-ant-api... (API 키 입력)" />
+    <button onclick="saveKey()">저장</button>
+    <span id="api-notice">API 키는 브라우저에만 저장돼요</span>
+  </div>
+
+  <div id="messages">
+    <div class="msg ai">
+      <div class="av">▶</div>
+      <div class="bubble">안녕하세요! 저는 유튜브 콘텐츠 전문가예요.<br><br>스크립트 작성, 썸네일 아이디어, SEO 최적화, 채널 성장 전략까지 도와드릴게요. 위에 API 키를 입력하면 대화를 시작할 수 있어요!</div>
+    </div>
+  </div>
+
+  <div style="padding: 8px 16px 0; background: var(--color-background-primary);">
+    <div class="quick-btns" id="quick-btns">
+      <button class="quick-btn" onclick="quickSend('영상 제목 추천해줘')">영상 제목 추천</button>
+      <button class="quick-btn" onclick="quickSend('스크립트 작성 도와줘')">스크립트 작성</button>
+      <button class="quick-btn" onclick="quickSend('썸네일 아이디어 알려줘')">썸네일 아이디어</button>
+      <button class="quick-btn" onclick="quickSend('SEO 태그 추천해줘')">SEO 태그</button>
+    </div>
+  </div>
+
+  <div id="input-area">
+    <textarea id="user-input" placeholder="메시지를 입력하세요..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+    <button id="send-btn" onclick="sendMessage()" disabled>
+      <svg class="send-icon" viewBox="0 0 24 24"><path d="M2 21L23 12 2 3v7l15 2-15 2v7z"/></svg>
+    </button>
+  </div>
+</div>
+
+<script>
+let apiKey = '';
+let history = [];
+const SYSTEM = `당신은 유튜브 콘텐츠 전문가입니다. 채널 성장, 스크립트 작성, 썸네일 아이디어, SEO 최적화, 유튜브 알고리즘, 콘텐츠 전략에 대한 전문 지식을 가지고 있습니다. 항상 실용적이고 구체적인 조언을 제공하며, 한국어로 친근하게 대화하세요. 답변은 명확하고 실행 가능하게 작성하세요.`;
+
+function saveKey() {
+  const val = document.getElementById('api-key-input').value.trim();
+  if (!val.startsWith('sk-ant')) { alert('올바른 API 키를 입력해주세요 (sk-ant-로 시작)'); return; }
+  apiKey = val;
+  document.getElementById('api-notice').textContent = '✓ API 키 저장됨';
+  document.getElementById('api-notice').style.color = '#639922';
+  document.getElementById('send-btn').disabled = false;
+  document.getElementById('api-key-input').value = '••••••••••••••••';
+}
+
+function autoResize(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 100) + 'px'; }
+
+function handleKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }
+
+function quickSend(text) { document.getElementById('user-input').value = text; sendMessage(); }
+
+function addMsg(role, text) {
+  const msgs = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'msg ' + (role === 'user' ? 'user' : 'ai');
+  div.innerHTML = `<div class="av">${role === 'user' ? '나' : '▶'}</div><div class="bubble">${text.replace(/\n/g,'<br>')}</div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+
+function showTyping() {
+  const msgs = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'msg ai'; div.id = 'typing-indicator';
+  div.innerHTML = `<div class="av">▶</div><div class="bubble"><div class="typing"><span></span><span></span><span></span></div></div>`;
+  msgs.appendChild(div); msgs.scrollTop = msgs.scrollHeight;
+}
+
+function removeTyping() { const el = document.getElementById('typing-indicator'); if (el) el.remove(); }
+
+async function sendMessage() {
+  if (!apiKey) { alert('먼저 API 키를 입력해주세요!'); return; }
+  const input = document.getElementById('user-input');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = ''; input.style.height = 'auto';
+  document.getElementById('send-btn').disabled = true;
+  addMsg('user', text);
+  history.push({ role: 'user', content: text });
+  showTyping();
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1000, system: SYSTEM, messages: history })
+    });
+    const data = await res.json();
+    removeTyping();
+    if (data.content && data.content[0]) {
+      const reply = data.content[0].text;
+      history.push({ role: 'assistant', content: reply });
+      addMsg('ai', reply);
+    } else { addMsg('ai', '오류가 발생했어요. API 키를 확인해주세요.'); }
+  } catch(e) { removeTyping(); addMsg('ai', '네트워크 오류가 발생했어요. 다시 시도해주세요.'); }
+  document.getElementById('send-btn').disabled = false;
+}
+</script>
