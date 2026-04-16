@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YouTube 콘텐츠 전문가 AI</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: #f7f6f3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 16px;
+  }
+
+  #app {
+    width: 100%;
+    max-width: 680px;
+    background: #ffffff;
+    border: 1px solid #e8e6e1;
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: 90vh;
+    max-height: 700px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+
+  #header {
+    padding: 14px 18px;
+    border-bottom: 1px solid #e8e6e1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #ffffff;
+  }
+
+  .avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: #ff4444;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .header-info .name { font-size: 14px; font-weight: 500; color: #1a1a1a; }
+  .header-info .role { font-size: 11px; color: #9b9a97; margin-top: 1px; }
+
+  .status {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: #9b9a97;
+  }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: #4caf50; }
+
+  #api-bar {
+    padding: 10px 16px;
+    background: #f7f6f3;
+    border-bottom: 1px solid #e8e6e1;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  #api-bar input {
+    flex: 1;
+    font-size: 12px;
+    padding: 7px 10px;
+    border: 1px solid #e0ded9;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #1a1a1a;
+    font-family: monospace;
+    outline: none;
+  }
+  #api-bar input:focus { border-color: #aeacaa; }
+
+  #api-bar button {
+    font-size: 12px;
+    padding: 7px 14px;
+    border: 1px solid #e0ded9;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #37352f;
+    cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+    white-space: nowrap;
+    transition: background 0.15s;
+  }
+  #api-bar button:hover { background: #f0eeea; }
+
+  #api-notice { font-size: 11px; color: #9b9a97; white-space: nowrap; }
+
+  #messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    background: #f7f6f3;
+  }
+  #messages::-webkit-scrollbar { width: 4px; }
+  #messages::-webkit-scrollbar-thumb { background: #d3d1cb; border-radius: 2px; }
+
+  .msg { display: flex; gap: 9px; max-width: 90%; }
+  .msg.user { align-self: flex-end; flex-direction: row-reverse; }
+
+  .msg-av {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    margin-top: 2px;
+  }
+  .msg.ai .msg-av { background: #ff4444; color: white; font-size: 14px; }
+  .msg.user .msg-av { background: #e8e6e1; color: #9b9a97; font-size: 11px; }
+
+  .bubble {
+    padding: 10px 14px;
+    font-size: 13.5px;
+    line-height: 1.65;
+    color: #37352f;
+  }
+  .msg.ai .bubble {
+    background: #ffffff;
+    border: 1px solid #e8e6e1;
+    border-radius: 4px 12px 12px 12px;
+  }
+  .msg.user .bubble {
+    background: #ff4444;
+    color: #ffffff;
+    border-radius: 12px 4px 12px 12px;
+  }
+
+  .typing-dots {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    padding: 12px 14px;
+  }
+  .typing-dots span {
+    width: 6px; height: 6px;
+    background: #aeacaa;
+    border-radius: 50%;
+    animation: bounce 1.2s infinite;
+  }
+  .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce {
+    0%,60%,100% { transform: translateY(0); }
+    30% { transform: translateY(-6px); }
+  }
+
+  #quick-area {
+    padding: 8px 16px 0;
+    background: #ffffff;
+    border-top: 1px solid #e8e6e1;
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .quick-btn {
+    font-size: 12px;
+    padding: 5px 11px;
+    border: 1px solid #e0ded9;
+    border-radius: 20px;
+    background: #f7f6f3;
+    color: #9b9a97;
+    cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .quick-btn:hover { border-color: #ff4444; color: #ff4444; background: #fff5f5; }
+
+  #input-area {
+    padding: 12px 16px;
+    border-top: 1px solid #e8e6e1;
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+    background: #ffffff;
+  }
+
+  #user-input {
+    flex: 1;
+    font-size: 13.5px;
+    padding: 9px 12px;
+    border: 1px solid #e0ded9;
+    border-radius: 8px;
+    background: #f7f6f3;
+    color: #37352f;
+    resize: none;
+    font-family: 'Noto Sans KR', sans-serif;
+    line-height: 1.5;
+    min-height: 40px;
+    max-height: 110px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  #user-input:focus { border-color: #aeacaa; background: #ffffff; }
+
+  #send-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    background: #ff4444;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: opacity 0.15s;
+  }
+  #send-btn:hover { opacity: 0.85; }
+  #send-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  #send-btn svg { width: 16px; height: 16px; fill: white; }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div id="header">
+    <div class="avatar">▶</div>
+    <div class="header-info">
+      <div class="name">YouTube 콘텐츠 전문가</div>
+      <div class="role">스크립트 · 썸네일 · SEO · 채널 전략</div>
+    </div>
+    <div class="status"><div class="dot"></div>온라인</div>
+  </div>
+
+  <div id="api-bar">
+    <input type="password" id="api-key-input" placeholder="Claude API 키 입력 (sk-ant-...)" />
+    <button onclick="saveKey()">저장</button>
+    <span id="api-notice">🔒 브라우저에만 저장됨</span>
+  </div>
+
+  <div id="messages">
+    <div class="msg ai">
+      <div class="msg-av">▶</div>
+      <div class="bubble">
+        안녕하세요! 저는 <strong>유튜브 콘텐츠 전문가</strong>예요. 😊<br><br>
+        스크립트 작성, 썸네일 아이디어, SEO 최적화, 채널 성장 전략까지 도와드릴게요!<br><br>
+        위에 <strong>API 키</strong>를 입력하시면 바로 시작할 수 있어요.
+      </div>
+    </div>
+  </div>
+
+  <div id="quick-area">
+    <button class="quick-btn" onclick="quickSend('영상 제목 10개 추천해줘')">영상 제목 추천</button>
+    <button class="quick-btn" onclick="quickSend('유튜브 스크립트 작성 도와줘')">스크립트 작성</button>
+    <button class="quick-btn" onclick="quickSend('클릭률 높은 썸네일 아이디어 알려줘')">썸네일 아이디어</button>
+    <button class="quick-btn" onclick="quickSend('SEO 최적화 태그 추천해줘')">SEO 태그</button>
+    <button class="quick-btn" onclick="quickSend('구독자 늘리는 채널 전략 알려줘')">채널 성장 전략</button>
+  </div>
+
+  <div id="input-area">
+    <textarea id="user-input" placeholder="메시지를 입력하세요... (Enter로 전송, Shift+Enter로 줄바꿈)" rows="1"
+      onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+    <button id="send-btn" onclick="sendMessage()" disabled>
+      <svg viewBox="0 0 24 24"><path d="M2 21L23 12 2 3v7l15 2-15 2v7z"/></svg>
+    </button>
+  </div>
+</div>
+
+<script>
+let apiKey = '';
+let history = [];
+
+const SYSTEM = `당신은 대한민국 최고의 유튜브 콘텐츠 전문가입니다. 다음 분야에서 깊은 전문성을 가지고 있습니다:
+
+1. 스크립트 작성: 후킹 인트로, 구조적 스토리텔링, 시청자 참여 유도
+2. 썸네일 전략: 클릭률(CTR) 높이는 디자인 원칙, 텍스트/색상/구도
+3. SEO 최적화: 제목, 설명, 태그, 해시태그 최적화
+4. 알고리즘 이해: 유튜브 추천 시스템, 시청 지속률, 인게이지먼트
+5. 채널 성장: 콘텐츠 전략, 업로드 스케줄, 커뮤니티 구축
+6. 트렌드 분석: 현재 유행하는 포맷, 주제, 편집 스타일
+
+항상 실용적이고 즉시 적용 가능한 조언을 제공하세요. 한국 유튜브 생태계에 맞는 조언을 우선으로 하고, 친근하고 명확하게 한국어로 답변하세요. 구체적인 예시와 함께 설명해주세요.`;
+
+function saveKey() {
+  const val = document.getElementById('api-key-input').value.trim();
+  if (!val.startsWith('sk-ant')) {
+    alert('올바른 API 키를 입력해주세요.\n(sk-ant-로 시작하는 키)');
+    return;
+  }
+  apiKey = val;
+  document.getElementById('api-notice').textContent = '✓ 저장 완료';
+  document.getElementById('api-notice').style.color = '#4caf50';
+  document.getElementById('send-btn').disabled = false;
+  document.getElementById('api-key-input').value = '••••••••••••••••••••';
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 110) + 'px';
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+function quickSend(text) {
+  document.getElementById('user-input').value = text;
+  sendMessage();
+}
+
+function addMsg(role, html) {
+  const msgs = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'msg ' + (role === 'user' ? 'user' : 'ai');
+  const label = role === 'user' ? '나' : '▶';
+  div.innerHTML = `<div class="msg-av">${label}</div><div class="bubble">${html}</div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function showTyping() {
+  const msgs = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'msg ai'; div.id = 'typing';
+  div.innerHTML = `<div class="msg-av">▶</div><div class="bubble"><div class="typing-dots"><span></span><span></span><span></span></div></div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function removeTyping() {
+  const el = document.getElementById('typing');
+  if (el) el.remove();
+}
+
+function formatText(text) {
+  return text
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n/g, '<br>');
+}
+
+async function sendMessage() {
+  if (!apiKey) { alert('먼저 API 키를 입력하고 저장해주세요!'); return; }
+  const input = document.getElementById('user-input');
+  const text = input.value.trim();
+  if (!text) return;
+
+  input.value = ''; input.style.height = 'auto';
+  document.getElementById('send-btn').disabled = true;
+  addMsg('user', formatText(text));
+  history.push({ role: 'user', content: text });
+  showTyping();
+
+  try {
+    const res = await fetch('https://claude-proxy.rmsusmsx.workers.dev', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-opus-4-5',
+        max_tokens: 1000,
+        system: SYSTEM,
+        messages: history
+      })
+    });
+    const data = await res.json();
+    removeTyping();
+    if (data.content && data.content[0]) {
+      const reply = data.content[0].text;
+      history.push({ role: 'assistant', content: reply });
+      addMsg('ai', formatText(reply));
+    } else {
+      const errMsg = data.error ? data.error.message : JSON.stringify(data);
+      addMsg('ai', '오류: ' + errMsg);
+    }
+  } catch(e) {
+    removeTyping();
+    addMsg('ai', '오류: ' + e.message);
+  }
+  document.getElementById('send-btn').disabled = false;
+  document.getElementById('user-input').focus();
+}
+</script>
+</body>
+</html>
